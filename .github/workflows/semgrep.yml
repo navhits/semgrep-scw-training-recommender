@@ -1,0 +1,35 @@
+name: Semgrep SARIF to SCW for contextual training
+
+on: pull_request_target
+
+jobs:
+  semgrep-scan:
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Semgrep scan
+        run: |
+          SEMGREP_BASELINE_REF=$GITHUB_REF semgrep scan --config auto --sarif -o semgrep_sarif.json
+      
+      - name: Add SCW Training
+        uses: SecureCodeWarrior/github-action-add-sarif-contextual-training@v1
+        with:
+          inputSarifFile: semgrep_sarif.json
+          outputSarifFile: scw_sarif.json
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: SCW_training_data
+          retention-days: 5
+          path: |
+            scw_sarif.json
+            
+
+
