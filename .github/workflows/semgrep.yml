@@ -29,7 +29,5 @@ jobs:
           name: SCW_training_data
           retention-days: 5
           path: |
+            semgrep_sarif.json
             scw_sarif.json
-            
-
-
