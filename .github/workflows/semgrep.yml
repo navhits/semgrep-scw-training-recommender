@@ -13,7 +13,7 @@ jobs:
 
       - name: Semgrep scan
         run: |
-          SEMGREP_BASELINE_REF=$GITHUB_REF semgrep scan --config auto --sarif -o semgrep_sarif.json
+          semgrep scan --config auto --sarif -o semgrep_sarif.json
       
       - name: Add SCW Training
         uses: SecureCodeWarrior/github-action-add-sarif-contextual-training@v1
