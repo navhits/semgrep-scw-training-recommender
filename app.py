@@ -1,29 +1,27 @@
-import os
-import flask
-import hashlib
+import json
+import secret_info
+import mysql.connector
 
-app = flask.Flask(__name__)
+RemoteMysql = secret_info.RemoteMysql
 
-@app.route("/route_param/<route_param>")
-def route_param(route_param):
-    print("blah")
-    return route_param
+mydb = mysql.connector.connect(host=RemoteMysql.host, user=RemoteMysql.user, passwd=RemoteMysql.passwd, database=RemoteMysql.database)
+mydbCursor = mydb.cursor()
 
-# Real world example
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    if flask.request.method == 'GET':
-        return flask.render_template('index.html')
-    # check url first
-    url = flask.request.form.get('url', None)
-    if url != '':
-        md5 = hashlib.md5(url+app.config['MD5_SALT']).hexdigest()
-        fpath = join(join(app.config['MEDIA_ROOT'], 'upload'), md5+'.jpg')
-        # ruleid: os-system-injection
-        r = os.system('wget %s -O "%s"'%(url, fpath))
-        if r != 0: abort(403)
-        return flask.redirect(flask.url_for('landmark', hash=md5))
+def lambda_handler(event, context):
+    publicIP=event["queryStringParameters"]["publicIP"]
+    sql = """UPDATE `EC2ServerPublicIP` SET %s = '%s' WHERE %s = %d""" % ("publicIP",publicIP,"ID", 1)
+    # ruleid: mysql-sqli
+    mydbCursor.execute(sql)
 
-@app.route("/ok")
-def ok():
-    os.system("This is fine")
+    # ok: mysql-sqli
+    mydbCursor.execute("UPDATE `EC2ServerPublicIP` SET %s = '%s' WHERE %s = %s", ("publicIP",publicIP,"ID", 1))
+    mydb.commit()
+    
+    Body={
+        "publicIP":publicIP
+        
+    }
+    return {
+        'statusCode': 200,
+        'body': json.dumps(Body)
+    }
